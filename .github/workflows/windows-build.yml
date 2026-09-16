@@ -1,0 +1,44 @@
+# Windows 실행 파일을 만든다. macOS에서는 flutter build windows가 되지 않으므로
+# (데스크톱은 크로스 컴파일 불가) Windows 러너에서 빌드해 아티팩트로 받는다.
+#
+# 내려받은 zip 안의 폴더째로 써야 한다. exe 하나만 떼어내면 실행되지 않고,
+# 같은 폴더의 flutter_windows.dll과 data/ 가 함께 있어야 한다.
+name: Windows 빌드
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # .fvmrc에 고정해 둔 버전과 맞춘다.
+          flutter-version: 3.44.9
+          channel: stable
+          cache: true
+
+      - name: 의존성 받기
+        run: flutter pub get
+
+      - name: 정적 분석
+        run: flutter analyze
+
+      - name: 테스트
+        run: flutter test
+
+      - name: 릴리스 빌드
+        run: flutter build windows --release
+
+      - name: 실행 파일 올리기
+        uses: actions/upload-artifact@v7
+        with:
+          name: ddai_jump_game-windows-x64
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error
